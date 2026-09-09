@@ -1,0 +1,19 @@
+From: Anna de Vries <anna@opdrachtgever.nl>
+To: Koen Schraven <k.schraven@kozijnenglas.nl>
+Cc: bouw@opdrachtgever.nl
+Subject: RE: Kozijnstaat blok A
+Date: Thu, 10 Sep 2026 09:12:00 +0200
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="XX"
+
+--XX
+Content-Type: text/plain; charset=utf-8
+
+Hoi Koen, detail 3 klopt niet, zie bijlage.
+--XX
+Content-Type: application/acad; name="detail3.dwg"
+Content-Disposition: attachment; filename="detail3.dwg"
+Content-Transfer-Encoding: base64
+
+RFdHREFUQQ==
+--XX--

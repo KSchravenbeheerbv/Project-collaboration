@@ -130,6 +130,51 @@ const server = http.createServer((req, res) => { let p = path.join(ROOT, decodeU
   await page.click('.chip[data-f=in]'); await page.waitForTimeout(150);
   check('filter ontvangen = leeg', (await page.textContent('#main')).includes('Nog geen mails'));
 
+  // ---- 5b. mail importeren + Claude ----
+  console.log('5b. Mail importeren & Claude');
+  await page.click('.chip[data-f=alle]'); await page.waitForTimeout(150);
+  await page.setInputFiles('#m-upl', { name: 'voorbeeld.msg', mimeType: 'application/vnd.ms-outlook', buffer: require('fs').readFileSync(require('path').join(__dirname, 'voorbeeld.msg')) });
+  await page.waitForSelector('.lade', { timeout: 8000 });
+  check('msg geïmporteerd en lade geopend', mock.db.mails.length === 2 && (await page.textContent('.lade')).includes('Geïmporteerd: voorbeeld.msg'));
+  check('bijlagen zichtbaar in lade', (await page.$$('.lade .bijlage')).length === 2);
+  await page.click('#m-voorstel'); await page.waitForSelector('.modal', { timeout: 8000 });
+  check('voorstel-venster met 2 acties', (await page.$$('.modal [data-v]')).length === 2);
+  check('Anna automatisch gekozen', (await page.$eval('.modal [data-vw="0"]', e => e.options[e.selectedIndex].text)).includes('Anna'));
+  await page.uncheck('.modal [data-v="1"]'); await page.click('#modal-opslaan'); await page.waitForTimeout(400);
+  const vs = mock.db.acties.find(a => a.titel === 'Kleuren aanleveren' && a.bron_type === 'mail');
+  check('1 voorgesteld actiepunt toegevoegd, gekoppeld aan mail', !!vs && vs.deadline === '2026-09-15' && !mock.db.acties.some(a => a.titel === 'Steiger regelen'));
+  await shot(page, '14-voorstel-acties'); await page.click('#lade-sluit');
+  // mail plakken + Claude uitlezen
+  await page.click('#m-nieuw'); await page.fill('#m-tekst', 'Van: Anna\nOnderwerp: RE: Kozijnstaat blok A\n\nHoi Koen, detail 3 klopt niet.'); await page.click('#m-claude'); await page.waitForTimeout(400);
+  check('Claude vult velden', (await page.inputValue('#m-ond')) === 'RE: Kozijnstaat blok A' && (await page.inputValue('#m-van')).includes('anna@') && (await page.inputValue('#m-richting')) === 'in');
+  await shot(page, '15-mail-plakken'); await page.click('#modal-opslaan'); await page.waitForTimeout(400);
+  check('geplakte mail opgeslagen als ontvangen', mock.db.mails.some(m => m.onderwerp === 'RE: Kozijnstaat blok A' && m.richting === 'in'));
+  // tekst slepen op dropzone opent plak-venster
+  await page.evaluate(() => { const dt = new DataTransfer(); dt.setData('text/plain', 'Gesleepte mailtekst'); document.getElementById('m-dropzone').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true })); });
+  await page.waitForTimeout(200);
+  check('tekst slepen opent plak-venster', (await page.inputValue('#m-tekst')) === 'Gesleepte mailtekst'); await page.click('#modal-annuleer');
+  // bestanden-tab: msg erin slepen wordt mail
+  await tab(page, 'bestanden');
+  await page.evaluate(async () => { const dt = new DataTransfer(); dt.items.add(new File(['x'], 'nog-een.eml', { type: 'message/rfc822' })); document.getElementById('dropzone').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true })); });
+  await page.waitForTimeout(1200);
+  check('eml op bestanden-dropzone wordt mail, geen bestand', mock.db.mails.some(m => m.onderwerp === 'Geïmporteerd: nog-een.eml') && !mock.db.bestanden.some(b => b.naam === 'nog-een.eml'));
+  await page.click('#lade-sluit').catch(() => { });
+
+  // ---- 5c. assistent ----
+  console.log('5c. Assistent');
+  await tab(page, 'assistent');
+  await page.fill('#ch-in', 'Wat staat er open?'); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
+  check('chat-antwoord', (await page.textContent('#ch-log')).includes('actiepunten open'));
+  await page.click('#ch-week'); await page.waitForTimeout(500);
+  check('weekoverzicht in gesprek', (await page.textContent('#ch-log')).includes('AFGELOPEN 7 DAGEN'));
+  await page.fill('#ch-tekst', 'Notities: Piet regelt de steiger.'); await page.click('#ch-acties'); await page.waitForSelector('.modal');
+  check('acties uit notities voorgesteld', (await page.$$('.modal [data-v]')).length === 2);
+  await page.click('#modal-opslaan'); await page.waitForTimeout(400);
+  check('2 acties uit notities toegevoegd', mock.db.acties.some(a => a.titel === 'Steiger regelen'));
+  await shot(page, '16-assistent');
+  await page.click('#ch-wis'); await page.waitForTimeout(150);
+  check('nieuw gesprek leeg', (await page.textContent('#ch-log')).includes('Nog geen gesprek'));
+
   // ---- 6. planning ----
   console.log('6. Planning');
   await tab(page, 'planning');
@@ -167,7 +212,7 @@ const server = http.createServer((req, res) => { let p = path.join(ROOT, decodeU
   // ---- 8. overzicht gevuld + ruimte wisselen ----
   console.log('8. Overzicht & ruimtes');
   await tab(page, 'overzicht');
-  check('kpi open acties = 4', (await page.textContent('.kpi:nth-child(1) .n')) === '4');
+  check('kpi open acties = 7', (await page.textContent('.kpi:nth-child(1) .n')) === '7');
   check('feed gevuld', (await page.$$('#feed .item')).length >= 8);
   check('mijlpaal op overzicht', (await page.textContent('#main')).includes('Start montage'));
   await shot(page, '10-overzicht');
@@ -178,7 +223,7 @@ const server = http.createServer((req, res) => { let p = path.join(ROOT, decodeU
   check('actie in leverancier-ruimte', mock.db.acties.some(a => a.ruimte === 'leverancier'));
   check('personen-keuze toont leverancier, niet opdrachtgever', !(await page.evaluate(() => { const S = window.__S; return S.profielen.filter(p => p.rol === 'opdrachtgever').length === 0; })) && true);
   await page.click('#ruimte-kies [data-ruimte=opdrachtgever]'); await page.waitForTimeout(400); await page.click('.chip[data-f=open]'); await page.waitForTimeout(150);
-  check('terug naar opdrachtgever: 4 open acties', (await page.$$('table.lijst tbody tr')).length === 4);
+  check('terug naar opdrachtgever: 7 open acties', (await page.$$('table.lijst tbody tr')).length === 7);
   // thema
   await page.click('#thema-knop'); await page.waitForTimeout(100);
   check('donker thema', (await page.getAttribute('html', 'data-theme')) === 'dark');
@@ -194,9 +239,9 @@ const server = http.createServer((req, res) => { let p = path.join(ROOT, decodeU
   check('ruimte-badge', (await page.textContent('#ruimte-badge')).includes('Opdrachtgever'));
   check('Contacten i.p.v. Team', (await page.textContent('#tabs [data-tab=team]')).trim() === 'Contacten');
   await tab(page, 'acties');
-  check('ziet alleen opdrachtgever-acties (4, geen JR Okna)', (await page.$$('table.lijst tbody tr')).length === 4 && !(await page.textContent('table.lijst')).includes('JR Okna'));
+  check('ziet alleen opdrachtgever-acties (7, geen JR Okna)', (await page.$$('table.lijst tbody tr')).length === 7 && !(await page.textContent('table.lijst')).includes('JR Okna'));
   await page.click('.chip[data-f=mijn]'); await page.waitForTimeout(150);
-  check('"voor mij" = 2 (Detail 3 + Kleuren)', (await page.$$('table.lijst tbody tr')).length === 2);
+  check('"voor mij" = 4 (Detail 3 + 3x Kleuren)', (await page.$$('table.lijst tbody tr')).length === 4);
   await page.click('table.lijst tbody tr:first-child'); await page.waitForSelector('.lade');
   check('extern kan niet verwijderen', !(await page.$('#a-del')));
   await page.click('#a-klaar'); await page.waitForTimeout(300);
@@ -212,6 +257,7 @@ const server = http.createServer((req, res) => { let p = path.join(ROOT, decodeU
   check('extern kan nieuwe versie uploaden (v3)', mock.db.bestanden[0].huidige_versie === 3);
   await page.click('#lade-sluit');
   await tab(page, 'planning');
+  check('extern ziet assistent-tab', await page.isVisible('#tabs [data-tab=assistent]'));
   check('extern ziet planning zonder bewerk-knop', !(await page.$('#p-nieuw')) && (await page.$$('.gantt .balk')).length === 3);
   await tab(page, 'team');
   check('contacten zonder leverancier', !(await page.textContent('table.lijst')).includes('Pawel') && (await page.textContent('table.lijst')).includes('Koen'));

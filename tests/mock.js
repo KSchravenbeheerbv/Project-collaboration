@@ -124,7 +124,20 @@ function maakMock() {
       const req = route.request(); apiCalls.push({ pad: new URL(req.url()).pathname, body: req.postDataJSON ? (() => { try { return req.postDataJSON(); } catch (e) { return null; } })() : null });
       const b = apiCalls[apiCalls.length - 1].body || {};
       if (/gebruikers/.test(req.url()) && b.actie === 'nieuw') { const id = uuid(); users[id] = { email: b.email, ww: b.wachtwoord, naam: b.naam, rol: b.rol, bedrijf: b.bedrijf }; db.profielen.push({ id, naam: b.naam, email: b.email, rol: b.rol, bedrijf: b.bedrijf || '', actief: true, created_at: now() }); }
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, pad: '/Utrecht/x' }) });
+      const antw = o => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) });
+      if (/mail-import/.test(req.url())) {
+        const p = profielVan(req); const naam = (b.pad || '').split('/').pop();
+        if (!storage[b.pad]) return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'importbestand niet gevonden in storage' }) });
+        const m = defaults('mails', { ruimte: b.ruimte, richting: 'uit', van: 'Koen Schraven <k.schraven@kozijnenglas.nl>', aan: 'Anna de Vries <anna@opdrachtgever.nl>', cc: '', onderwerp: 'Geïmporteerd: ' + naam, datum: now(), tekst: 'Uitgelezen tekst uit ' + naam, bron: 'handmatig', gemaakt_door: p && p.id, bijlagen: [{ naam: 'kozijnstaat.pdf', pad: b.ruimte + '/mail/x/kozijnstaat.pdf', grootte: 19 }, { naam: 'Origineel: ' + naam, pad: b.ruimte + '/mail/x/' + naam, grootte: 100, origineel: true }] });
+        db.mails.push(m); delete storage[b.pad]; return antw({ ok: true, id: m.id, bijlagen: 2 });
+      }
+      if (/assistent/.test(req.url())) {
+        if (b.actie === 'mail_tekst') return antw({ ok: true, mail: { van: 'Anna de Vries <anna@opdrachtgever.nl>', aan: 'k.schraven@kozijnenglas.nl', cc: '', datum: '2026-09-10T09:12', onderwerp: 'RE: Kozijnstaat blok A', tekst: 'Hoi Koen, detail 3 klopt niet.' } });
+        if (b.actie === 'chat') return antw({ ok: true, antwoord: 'Er staan ' + db.acties.filter(a => a.ruimte === b.ruimte && a.status === 'open').length + ' actiepunten open. Vraag was: ' + b.vraag });
+        if (b.actie === 'week') return antw({ ok: true, tekst: 'WAT IS ER DE AFGELOPEN 7 DAGEN GEBEURD\n- test weekoverzicht' });
+        if (b.actie === 'acties') return antw({ ok: true, acties: [{ titel: 'Kleuren aanleveren', wie: 'Anna', deadline: '2026-09-15', omschrijving: 'Uit de tekst' }, { titel: 'Steiger regelen', wie: 'Schraven', deadline: '', omschrijving: '' }], personen: db.profielen.filter(p => p.rol === 'schraven' || p.rol === b.ruimte).map(p => ({ id: p.id, naam: p.naam })) });
+      }
+      return antw({ ok: true, pad: '/Utrecht/x' });
     });
   }
   return { db, storage, users, apiCalls, installeer };
