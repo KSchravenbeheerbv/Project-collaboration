@@ -1,0 +1,218 @@
+:root{
+  --or:#f26a21; --or2:#d9581a; --or-l:#fff1e8;
+  --bg:#f5f6f8; --pan:#ffffff; --tx:#1b1f26; --tx2:#5c6470; --lijn:#e3e6ea; --lijn2:#cfd4da;
+  --ok:#2e9e5b; --warn:#e0a800; --rood:#d33a2c; --blauw:#2a6fd6; --grijs:#8a929c;
+  --schaduw:0 6px 24px rgba(0,0,0,.10); --r:10px;
+}
+[data-theme="dark"]{
+  --or:#ff7a2e; --or2:#f26a21; --or-l:#3a2416;
+  --bg:#14171c; --pan:#1e2229; --tx:#eef0f3; --tx2:#a3aab4; --lijn:#2c323b; --lijn2:#3b424c;
+  --schaduw:0 6px 24px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--blauw)}
+[hidden]{display:none!important}
+h1,h2,h3{margin:0 0 .5em;font-weight:650}
+h2{font-size:1.25rem}h3{font-size:1.05rem}
+p{margin:.3em 0}
+.klein{font-size:.85rem;color:var(--tx2)}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em}
+
+/* knoppen */
+.btn{display:inline-flex;align-items:center;gap:.4em;border:1px solid var(--lijn2);background:var(--pan);color:var(--tx);border-radius:8px;padding:.5em .9em;cursor:pointer;line-height:1.2;white-space:nowrap}
+.btn:hover{border-color:var(--or)}
+.btn.p{background:var(--or);border-color:var(--or);color:#fff;font-weight:600}
+.btn.p:hover{background:var(--or2)}
+.btn.klein{padding:.3em .6em;font-size:.85rem}
+.btn.gevaar{color:var(--rood);border-color:var(--rood)}
+.btn.link{border:none;background:none;color:var(--blauw);padding:.2em .3em}
+.btn:disabled{opacity:.5;cursor:default}
+.icoon{width:1.05em;height:1.05em;vertical-align:-.15em;fill:currentColor}
+
+/* velden */
+label.veld{display:block;margin:.55em 0}
+label.veld>span{display:block;font-size:.82rem;color:var(--tx2);margin-bottom:.2em;font-weight:600}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=datetime-local],input[type=number],select,textarea{width:100%;border:1px solid var(--lijn2);background:var(--pan);border-radius:8px;padding:.5em .65em;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(242,106,33,.18)}
+textarea{min-height:5em;resize:vertical}
+.rij{display:flex;gap:.6em;flex-wrap:wrap;align-items:flex-end}
+.rij>label.veld{flex:1 1 160px;margin:.3em 0}
+.acties-rij{display:flex;gap:.5em;flex-wrap:wrap;align-items:center;margin:.6em 0}
+.acties-rij .vul{flex:1}
+
+/* login */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1em}
+#login .kaart{width:100%;max-width:400px;background:var(--pan);border-radius:14px;box-shadow:var(--schaduw);padding:1.6em}
+.logo{display:flex;align-items:center;gap:.6em;font-weight:800;letter-spacing:.2px}
+.logo .blok{width:34px;height:34px;border-radius:9px;background:var(--or);display:grid;place-items:center;color:#fff;font-size:1.1rem}
+.melding{padding:.6em .8em;border-radius:8px;margin:.6em 0;font-size:.9rem}
+.melding.fout{background:#fde8e6;color:#9b2318}
+.melding.ok{background:#e4f5ea;color:#1c6b3a}
+[data-theme="dark"] .melding.fout{background:#43201c;color:#ffb3aa}
+[data-theme="dark"] .melding.ok{background:#173a26;color:#a5e5bf}
+
+/* app-layout */
+#app{display:flex;flex-direction:column;min-height:100vh}
+header.top{background:var(--pan);border-bottom:1px solid var(--lijn);position:sticky;top:0;z-index:20}
+.top-in{display:flex;align-items:center;gap:.8em;padding:.55em 1em;max-width:1400px;margin:0 auto}
+.top-in .vul{flex:1}
+.ruimte-kies{display:flex;background:var(--bg);border-radius:9px;padding:3px;gap:3px}
+.ruimte-kies button{border:none;background:none;padding:.35em .8em;border-radius:7px;cursor:pointer;color:var(--tx2);font-weight:600;font-size:.9rem}
+.ruimte-kies button.actief{background:var(--or);color:#fff}
+.ruimte-badge{font-size:.85rem;font-weight:600;color:var(--or);background:var(--or-l);padding:.3em .7em;border-radius:99px}
+nav.tabs{background:var(--pan);border-bottom:1px solid var(--lijn);overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav.tabs .in{display:flex;gap:.2em;padding:0 .6em;max-width:1400px;margin:0 auto}
+nav.tabs button{border:none;background:none;padding:.75em .9em;cursor:pointer;color:var(--tx2);font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;display:flex;gap:.4em;align-items:center}
+nav.tabs button.actief{color:var(--or);border-bottom-color:var(--or)}
+nav.tabs .tel{background:var(--or);color:#fff;border-radius:99px;font-size:.7rem;padding:.1em .45em;min-width:1.5em;text-align:center}
+main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:1em}
+.paneel{background:var(--pan);border:1px solid var(--lijn);border-radius:var(--r);padding:1em;margin-bottom:1em}
+.kop{display:flex;align-items:center;gap:.6em;flex-wrap:wrap;margin-bottom:.6em}
+.kop h2{margin:0}.kop .vul{flex:1}
+.kolommen{display:grid;grid-template-columns:2fr 1fr;gap:1em}
+.kolommen3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1em}
+.kolommen.bestanden-kol{grid-template-columns:240px 1fr}
+@media(max-width:900px){.kolommen,.kolommen.bestanden-kol{grid-template-columns:1fr}}
+
+/* tabellen */
+table.lijst{width:100%;border-collapse:collapse;font-size:.93rem}
+table.lijst th{text-align:left;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--tx2);padding:.5em .6em;border-bottom:1px solid var(--lijn)}
+table.lijst td{padding:.55em .6em;border-bottom:1px solid var(--lijn);vertical-align:top}
+table.lijst tr.klik{cursor:pointer}
+table.lijst tr.klik:hover td{background:var(--or-l)}
+table.lijst tr.gekozen td{background:var(--or-l)}
+.tabel-wrap{overflow-x:auto}
+.leeg{color:var(--tx2);padding:1.2em;text-align:center;border:1px dashed var(--lijn2);border-radius:8px}
+
+/* tags */
+.tag{display:inline-block;font-size:.75rem;font-weight:700;padding:.15em .55em;border-radius:99px;background:var(--lijn);color:var(--tx2);white-space:nowrap}
+.tag.nieuw{background:#e8effb;color:#2a5db0}
+.tag.ter_controle,.tag.bezig{background:#fff3cd;color:#8a6100}
+.tag.goedgekeurd,.tag.klaar{background:#e4f5ea;color:#1c6b3a}
+.tag.afgekeurd,.tag.telaat{background:#fde8e6;color:#9b2318}
+.tag.definitief{background:#e6e6f7;color:#3c3c8f}
+.tag.open{background:#e8effb;color:#2a5db0}
+.tag.vervallen{background:var(--lijn);color:var(--tx2);text-decoration:line-through}
+.tag.hoog{background:#fde8e6;color:#9b2318}
+.tag.laag{background:var(--lijn);color:var(--tx2)}
+.tag.uit{background:var(--or-l);color:var(--or2)}
+.tag.in{background:#e8effb;color:#2a5db0}
+.tag.rol-schraven{background:var(--or-l);color:var(--or2)}
+.tag.rol-opdrachtgever{background:#e8effb;color:#2a5db0}
+.tag.rol-leverancier{background:#e6e6f7;color:#3c3c8f}
+[data-theme="dark"] .tag.nieuw,[data-theme="dark"] .tag.open,[data-theme="dark"] .tag.in,[data-theme="dark"] .tag.rol-opdrachtgever{background:#1d2c45;color:#9dbdf5}
+[data-theme="dark"] .tag.ter_controle,[data-theme="dark"] .tag.bezig{background:#3f3413;color:#f3d27a}
+[data-theme="dark"] .tag.goedgekeurd,[data-theme="dark"] .tag.klaar{background:#173a26;color:#a5e5bf}
+[data-theme="dark"] .tag.afgekeurd,[data-theme="dark"] .tag.telaat,[data-theme="dark"] .tag.hoog{background:#43201c;color:#ffb3aa}
+[data-theme="dark"] .tag.definitief,[data-theme="dark"] .tag.rol-leverancier{background:#2a2a4d;color:#c2c2f5}
+
+/* kpi's */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7em;margin-bottom:1em}
+.kpi{background:var(--pan);border:1px solid var(--lijn);border-radius:var(--r);padding:.8em 1em;cursor:pointer}
+.kpi:hover{border-color:var(--or)}
+.kpi .n{font-size:1.7rem;font-weight:800;line-height:1.1}
+.kpi .l{font-size:.8rem;color:var(--tx2)}
+.kpi.rood .n{color:var(--rood)}.kpi.or .n{color:var(--or)}.kpi.groen .n{color:var(--ok)}
+
+/* chips/filters */
+.chips{display:flex;gap:.4em;flex-wrap:wrap}
+.chip{border:1px solid var(--lijn2);background:var(--pan);border-radius:99px;padding:.25em .75em;font-size:.85rem;cursor:pointer;color:var(--tx2)}
+.chip.actief{background:var(--or);border-color:var(--or);color:#fff}
+
+/* mappen */
+.mappen{display:flex;flex-direction:column;gap:.15em}
+.mappen button{text-align:left;border:none;background:none;padding:.45em .6em;border-radius:7px;cursor:pointer;display:flex;gap:.5em;align-items:center;color:var(--tx)}
+.mappen button.actief{background:var(--or-l);color:var(--or2);font-weight:700}
+.mappen button .tel{margin-left:auto;font-size:.75rem;color:var(--tx2)}
+
+/* dropzone */
+.dropzone{border:2px dashed var(--lijn2);border-radius:var(--r);padding:1em;text-align:center;color:var(--tx2);margin:.6em 0;transition:.15s}
+.dropzone.aan{border-color:var(--or);background:var(--or-l);color:var(--or2)}
+.voortgang{height:8px;background:var(--lijn);border-radius:99px;overflow:hidden;margin:.3em 0}
+.voortgang>div{height:100%;background:var(--or);width:0;transition:width .2s}
+.uploads{margin:.5em 0;font-size:.88rem}
+.uploads .item{padding:.3em 0;border-bottom:1px solid var(--lijn)}
+
+/* detail-lade */
+.lade-achter{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40}
+.lade{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--pan);z-index:41;box-shadow:var(--schaduw);display:flex;flex-direction:column}
+.lade .lade-kop{display:flex;align-items:center;gap:.6em;padding:.8em 1em;border-bottom:1px solid var(--lijn)}
+.lade .lade-kop h3{margin:0;flex:1;word-break:break-word}
+.lade .lade-body{flex:1;overflow:auto;padding:1em}
+.sluit{border:none;background:none;font-size:1.4rem;cursor:pointer;color:var(--tx2);line-height:1}
+
+/* logboek */
+.logboek{border-left:2px solid var(--lijn);margin:.5em 0 .5em .4em;padding-left:.9em}
+.log-item{position:relative;margin:.55em 0;font-size:.9rem}
+.log-item:before{content:"";position:absolute;left:-1.25em;top:.5em;width:9px;height:9px;border-radius:50%;background:var(--grijs)}
+.log-item.opm:before{background:var(--or)}
+.log-item .wie{font-weight:700}
+.log-item .wanneer{color:var(--tx2);font-size:.8rem;margin-left:.4em}
+.log-item .tekst{white-space:pre-wrap;word-break:break-word}
+.log-item.opm .tekst{background:var(--or-l);padding:.4em .6em;border-radius:8px;margin-top:.2em}
+[data-theme="dark"] .log-item.opm .tekst{background:#2b2118}
+.opm-form{display:flex;gap:.5em;align-items:flex-end;margin-top:.6em}
+.opm-form textarea{min-height:3.2em;flex:1}
+
+/* versies */
+.versies .item{display:flex;gap:.6em;align-items:center;padding:.45em 0;border-bottom:1px solid var(--lijn);font-size:.9rem;flex-wrap:wrap}
+.versies .item .v{font-weight:800;color:var(--or);min-width:2.2em}
+.versies .item .vul{flex:1;min-width:120px;word-break:break-word}
+
+/* modal */
+.modal-achter{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;display:flex;align-items:center;justify-content:center;padding:1em}
+.modal{background:var(--pan);border-radius:14px;width:100%;max-width:640px;max-height:92vh;overflow:auto;box-shadow:var(--schaduw)}
+.modal .m-kop{display:flex;align-items:center;padding:.8em 1em;border-bottom:1px solid var(--lijn)}
+.modal .m-kop h3{margin:0;flex:1}
+.modal .m-body{padding:1em}
+.modal .m-voet{display:flex;gap:.5em;justify-content:flex-end;padding:.8em 1em;border-top:1px solid var(--lijn);flex-wrap:wrap}
+
+/* gantt */
+.gantt-wrap{overflow:auto;border:1px solid var(--lijn);border-radius:var(--r);background:var(--pan)}
+.gantt{display:grid;font-size:.85rem;min-width:100%}
+.gantt .cel{border-bottom:1px solid var(--lijn);border-right:1px solid var(--lijn);padding:.35em .5em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt .kopcel{background:var(--bg);font-weight:700;font-size:.75rem;color:var(--tx2);text-align:center;position:sticky;top:0;z-index:2}
+.gantt .naamcel{position:sticky;left:0;background:var(--pan);z-index:3;font-weight:600;border-right:2px solid var(--lijn2);cursor:pointer}
+.gantt .naamcel.groep{background:var(--bg);font-weight:800;text-transform:uppercase;font-size:.75rem;color:var(--tx2);cursor:default}
+.gantt .naamcel .sub{font-weight:400;color:var(--tx2);font-size:.78rem}
+.gantt .rijbalk{position:relative;border-bottom:1px solid var(--lijn);grid-column:2/-1;min-height:34px}
+.gantt .rijbalk .raster{position:absolute;inset:0;display:grid;pointer-events:none}
+.gantt .rijbalk .raster>div{border-right:1px solid var(--lijn)}
+.gantt .rijbalk .raster>div.weekend{background:rgba(128,128,128,.06)}
+.gantt .balk{position:absolute;top:7px;height:20px;border-radius:5px;background:var(--or);color:#fff;font-size:.72rem;line-height:20px;padding:0 .5em;white-space:nowrap;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.gantt .balk .vord{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.25)}
+.gantt .balk span{position:relative}
+.gantt .mijlpaal{position:absolute;top:8px;width:18px;height:18px;background:var(--rood);transform:rotate(45deg);border-radius:3px}
+.gantt .vandaag{position:absolute;top:0;bottom:0;width:2px;background:var(--rood);z-index:1;opacity:.8}
+.gantt .kopcel.vandaag-kop{color:var(--rood)}
+
+/* overzicht-activiteit */
+.activiteit .item{display:flex;gap:.6em;padding:.45em 0;border-bottom:1px solid var(--lijn);font-size:.9rem;align-items:flex-start}
+.activiteit .item .ic{width:26px;height:26px;border-radius:7px;background:var(--or-l);color:var(--or2);display:grid;place-items:center;flex:none;font-size:.8rem;font-weight:800}
+.activiteit .item .vul{flex:1;min-width:0}
+.activiteit .item .wanneer{color:var(--tx2);font-size:.78rem;white-space:nowrap}
+
+/* toast */
+#toast{position:fixed;bottom:1.2em;left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:.6em 1em;border-radius:99px;z-index:99;font-size:.9rem;box-shadow:var(--schaduw);opacity:0;transition:.2s;pointer-events:none}
+#toast.zien{opacity:1}
+
+.mail-tekst{white-space:pre-wrap;word-break:break-word;background:var(--bg);border-radius:8px;padding:.8em;font-size:.9rem;max-height:50vh;overflow:auto}
+.bijlage{display:inline-flex;gap:.3em;align-items:center;border:1px solid var(--lijn2);border-radius:7px;padding:.25em .55em;font-size:.85rem;margin:.2em .3em .2em 0;cursor:pointer;background:var(--pan)}
+.bijlage:hover{border-color:var(--or)}
+
+@media(max-width:640px){
+  main{padding:.6em}
+  .paneel{padding:.8em}
+  .top-in{padding:.5em .7em;gap:.5em}
+  .verberg-mobiel{display:none!important}
+  table.lijst{font-size:.86rem}
+  table.lijst td,table.lijst th{padding:.45em .4em}
+  .ruimte-kies button{padding:.35em .55em;font-size:.8rem}
+}
+@media print{
+  header.top,nav.tabs,.btn,.chips,#toast{display:none!important}
+  main{max-width:none;padding:0}
+  .gantt-wrap{overflow:visible;border:none}
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Samenwerking Merwede Utrecht — Schraven</title>
+<meta name="theme-color" content="#f26a21">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f26a21'/%3E%3Ctext x='16' y='22' font-size='18' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EU%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login">
+  <div class="kaart">
+    <div class="logo" style="margin-bottom:1em"><span class="blok">U</span><span>Samenwerking <span id="login-project"></span></span></div>
+    <p class="klein">Log in met het e-mailadres en wachtwoord dat je van Schraven hebt gekregen.</p>
+    <form id="login-form">
+      <label class="veld"><span>E-mailadres</span><input type="email" id="login-email" autocomplete="username" required></label>
+      <label class="veld"><span>Wachtwoord</span><input type="password" id="login-ww" autocomplete="current-password" required></label>
+      <div id="login-melding"></div>
+      <button class="btn p" type="submit" style="width:100%;justify-content:center;margin-top:.5em">Inloggen</button>
+    </form>
+    <p style="text-align:center;margin-top:1em"><button class="btn link" id="login-vergeten" type="button">Wachtwoord vergeten?</button></p>
+    <form id="reset-form" hidden>
+      <p><b>Nieuw wachtwoord instellen</b></p>
+      <label class="veld"><span>Nieuw wachtwoord (min. 8 tekens)</span><input type="password" id="reset-ww" minlength="8" autocomplete="new-password" required></label>
+      <button class="btn p" type="submit" style="width:100%;justify-content:center">Opslaan</button>
+    </form>
+    <p class="klein" style="text-align:center;margin-top:1.2em">Schraven BV · De Hemeltjes 4, Goirle · 085 246 59 50</p>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-in">
+      <div class="logo"><span class="blok">U</span><span class="verberg-mobiel" id="app-project"></span></div>
+      <div class="vul"></div>
+      <div class="ruimte-kies" id="ruimte-kies" hidden>
+        <button data-ruimte="opdrachtgever">Opdrachtgever</button>
+        <button data-ruimte="leverancier">Leverancier</button>
+      </div>
+      <span class="ruimte-badge" id="ruimte-badge" hidden></span>
+      <span class="klein verberg-mobiel" id="wie"></span>
+      <button class="btn klein" id="thema-knop" title="Licht/donker">◐</button>
+      <button class="btn klein" id="uitlog-knop">Uitloggen</button>
+    </div>
+  </header>
+  <nav class="tabs"><div class="in" id="tabs">
+    <button data-tab="overzicht">Overzicht</button>
+    <button data-tab="bestanden">Bestanden <span class="tel" id="tel-bestanden" hidden></span></button>
+    <button data-tab="acties">Actiepunten <span class="tel" id="tel-acties" hidden></span></button>
+    <button data-tab="afspraken">Afspraken</button>
+    <button data-tab="mail">Mail</button>
+    <button data-tab="planning">Planning</button>
+    <button data-tab="team">Team</button>
+  </div></nav>
+  <main id="main"></main>
+</div>
+
+<div id="lade-plek"></div>
+<div id="modal-plek"></div>
+<div id="toast"></div>
+
+<script src="config.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="lib/tus.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
