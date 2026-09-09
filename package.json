@@ -1,9 +1,11 @@
 {
   "name": "utrecht-samenwerk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Samenwerkingsplatform Merwede Utrecht - Schraven BV",
   "dependencies": {
-    "@supabase/supabase-js": "^2.116.0"
+    "@supabase/supabase-js": "^2.116.0",
+    "mailparser": "^3.9.23",
+    "@kenjiuno/msgreader": "^1.28.0"
   }
 }

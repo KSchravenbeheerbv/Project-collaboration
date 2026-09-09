@@ -131,7 +131,7 @@ function render() {
   tellers();
   $$('#tabs button').forEach(b => b.classList.toggle('actief', b.dataset.tab === S.tab));
   const m = $('#main');
-  ({ overzicht: rOverzicht, bestanden: rBestanden, acties: rActies, afspraken: rAfspraken, mail: rMail, planning: rPlanning, team: rTeam }[S.tab] || rOverzicht)(m);
+  ({ overzicht: rOverzicht, bestanden: rBestanden, acties: rActies, afspraken: rAfspraken, mail: rMail, planning: rPlanning, assistent: rAssistent, team: rTeam }[S.tab] || rOverzicht)(m);
 }
 
 // ===== OVERZICHT =====
@@ -218,7 +218,7 @@ function rBestanden(m) {
   const dz = $('#dropzone');
   ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('aan'); }));
   ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('aan'); }));
-  dz.addEventListener('drop', e => uploadNieuw(Array.from(e.dataTransfer.files)));
+  dz.addEventListener('drop', e => { const fs = Array.from(e.dataTransfer.files); const mails = fs.filter(isMailBestand); if (mails.length) importeerMails(mails); const rest = fs.filter(f => !isMailBestand(f)); if (rest.length) uploadNieuw(rest); });
   $$('tr[data-id]', m).forEach(r => r.onclick = e => { if (e.target.closest('[data-dl]')) return; openBestand(r.dataset.id); });
   $$('[data-dl]', m).forEach(b => b.onclick = () => download(b.dataset.dl));
   toonUploads();
@@ -450,11 +450,12 @@ function openAfspraak(id) {
       <p style="white-space:pre-wrap">${esc(a.tekst || '')}</p>
       <h3 style="margin-top:1em">Actiepunten uit deze afspraak</h3>
       ${acts.length ? `<table class="lijst"><tbody>${acts.map(x => `<tr class="klik" data-actie="${x.id}"><td class="mono">#${x.nummer}</td><td>${esc(x.titel)}<div class="klein">${esc(x.verantwoordelijke_naam || naam(x.verantwoordelijke))}${x.deadline ? ' · ' + dat(x.deadline) : ''}</div></td><td>${tag(x.status, STATUS_ACTIE[x.status])}</td></tr>`).join('')}</tbody></table>` : '<p class="klein">Nog geen actiepunten.</p>'}
-      <div class="acties-rij"><button class="btn p klein" id="af-actie">+ Actiepunt uit deze afspraak</button></div>
+      <div class="acties-rij"><button class="btn p klein" id="af-actie">+ Actiepunt uit deze afspraak</button><button class="btn klein" id="af-voorstel">✨ Actiepunten voorstellen</button></div>
       ${opmBlok('afspraak', id)}`);
     $('#af-bew').onclick = () => afspraakModal(a);
     if ($('#af-del')) $('#af-del').onclick = () => modalBevestig('Verwijderen?', a.titel, async () => { const { error } = await sb.from('afspraken').delete().eq('id', id); if (error) return fout(error); sluitLade(); herlaad(); });
     $('#af-actie').onclick = () => actieModal(null, { type: 'afspraak', id, label: SOORT_AFSPRAAK[a.soort] + ': ' + a.titel });
+    $('#af-voorstel').onclick = () => voorstelActies('afspraak', id, SOORT_AFSPRAAK[a.soort] + ': ' + a.titel);
     $$('[data-actie]').forEach(x => x.onclick = () => openActie(x.dataset.actie));
     opmKoppel('afspraak', id);
   };
@@ -466,17 +467,55 @@ function rMail(m) {
   const f = S.mailFilter;
   const lijst = S.mails.filter(x => f === 'alle' || x.richting === f);
   m.innerHTML = `<div class="paneel">
-    <div class="kop"><h2>Mail-log</h2><div class="chips">${[['alle', 'Alles'], ['uit', 'Verstuurd'], ['in', 'Ontvangen']].map(([k, v]) => `<button class="chip ${f === k ? 'actief' : ''}" data-f="${k}">${v}</button>`).join('')}</div><div class="vul"></div><button class="btn p" id="m-nieuw">+ Mail loggen</button></div>
-    <p class="klein">Mails die via het BCC-adres binnenkomen verschijnen hier automatisch; andere mails kun je hier handmatig plakken.</p>
+    <div class="kop"><h2>Mail-log</h2><div class="chips">${[['alle', 'Alles'], ['uit', 'Verstuurd'], ['in', 'Ontvangen']].map(([k, v]) => `<button class="chip ${f === k ? 'actief' : ''}" data-f="${k}">${v}</button>`).join('')}</div><div class="vul"></div>
+      <input type="file" id="m-upl" accept=".msg,.eml,message/rfc822,application/vnd.ms-outlook" multiple hidden>
+      <button class="btn" id="m-upl-knop">📩 Mailbestand kiezen</button><button class="btn p" id="m-nieuw">+ Mail plakken</button></div>
+    <div class="dropzone" id="m-dropzone"><b>Sleep hier je mails naartoe</b> (.msg uit Outlook of .eml) — afzender, datum, onderwerp, tekst én bijlagen worden automatisch uitgelezen.<br><span class="klein">Tip Outlook: sleep de mail eerst naar je bureaublad (wordt een .msg-bestand) en dan hierheen. Of plak de tekst via "Mail plakken" en laat Claude hem uitlezen.</span></div>
+    <div class="uploads" id="m-uploads"></div>
     <div class="tabel-wrap">${lijst.length ? `<table class="lijst"><thead><tr><th>Datum</th><th></th><th>Van → aan</th><th>Onderwerp</th><th>Bijl.</th></tr></thead><tbody>
       ${lijst.map(x => `<tr class="klik" data-id="${x.id}"><td>${esc(datTijd(x.datum))}</td><td>${tag(x.richting, x.richting === 'uit' ? 'Uit' : 'In')}</td><td class="klein">${esc(x.van)}<br>→ ${esc(x.aan)}</td><td><b>${esc(x.onderwerp || '(geen onderwerp)')}</b><div class="klein">${esc((x.tekst || '').replace(/\s+/g, ' ').slice(0, 110))}</div></td><td>${(x.bijlagen || []).length ? '📎 ' + x.bijlagen.length : ''}</td></tr>`).join('')}
     </tbody></table>` : '<div class="leeg">Nog geen mails gelogd.</div>'}</div></div>`;
   $$('.chip', m).forEach(c => c.onclick = () => { S.mailFilter = c.dataset.f; render(); });
   $('#m-nieuw').onclick = () => mailModal();
+  $('#m-upl-knop').onclick = () => $('#m-upl').click();
+  $('#m-upl').onchange = e => { importeerMails(Array.from(e.target.files)); e.target.value = ''; };
+  const dz = $('#m-dropzone');
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('aan'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('aan'); }));
+  dz.addEventListener('drop', e => {
+    const fs = Array.from(e.dataTransfer.files);
+    if (fs.length) return importeerMails(fs);
+    const t = e.dataTransfer.getData('text/plain'); if (t && t.trim()) mailModal({ tekst: t });
+  });
   $$('tr[data-id]', m).forEach(r => r.onclick = () => openMail(r.dataset.id));
+  toonMailUploads();
 }
-function mailModal() {
-  modal('Mail loggen', `
+function isMailBestand(f) { return /\.(msg|eml)$/i.test(f.name) || f.type === 'message/rfc822' || f.type === 'application/vnd.ms-outlook'; }
+function toonMailUploads() { const u = $('#m-uploads'); if (!u) return; u.innerHTML = (S.mailUploads || []).map(x => `<div class="item"><div>${esc(x.naam)} <span class="klein">${x.status}</span></div><div class="voortgang"><div style="width:${x.pct}%"></div></div></div>`).join(''); }
+async function importeerMails(files) {
+  files = files.filter(f => isMailBestand(f) || f.size);
+  if (!files.length) return;
+  S.mailUploads = S.mailUploads || [];
+  let laatste = null;
+  for (const f of files) {
+    if (!isMailBestand(f)) { toast(f.name + ' is geen mailbestand (.msg/.eml)'); continue; }
+    const u = { naam: f.name, pct: 0, status: 'uploaden…' }; S.mailUploads.push(u); toonMailUploads();
+    try {
+      const pad = `${S.ruimte}/mailimport/${crypto.randomUUID()}/${veiligeNaam(f.name)}`;
+      await uploadBlob(pad, f, p => { u.pct = p; toonMailUploads(); });
+      u.status = 'uitlezen…'; toonMailUploads();
+      const r = await apiCall('/api/mail-import', { ruimte: S.ruimte, pad });
+      u.status = `klaar ✓ (${r.bijlagen} bijlage${r.bijlagen === 1 ? '' : 'n'})`; u.pct = 100; laatste = r.id; toonMailUploads();
+    } catch (e) { u.status = 'mislukt: ' + (e.message || e); toonMailUploads(); fout(e); }
+  }
+  setTimeout(() => { S.mailUploads = (S.mailUploads || []).filter(x => !/klaar/.test(x.status)); toonMailUploads(); }, 5000);
+  await herlaad();
+  if (laatste && files.length === 1) { S.tab = 'mail'; render(); openMail(laatste); }
+}
+function mailModal(vooraf) {
+  vooraf = vooraf || {};
+  modal('Mail plakken / loggen', `
+    <div class="acties-rij" style="margin-top:0"><span class="klein">Plak de hele mail (Ctrl+A, Ctrl+C in de mail) in het tekstvak en klik op <b>Uitlezen met Claude</b> — de velden worden dan automatisch ingevuld.</span><button class="btn klein" id="m-claude">✨ Uitlezen met Claude</button></div>
     <div class="rij">
       <label class="veld"><span>Richting</span><select id="m-richting"><option value="uit">Verstuurd door Schraven</option><option value="in">Ontvangen</option></select></label>
       <label class="veld"><span>Datum/tijd</span><input type="datetime-local" id="m-datum" value="${new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}"></label>
@@ -487,7 +526,7 @@ function mailModal() {
     </div>
     <label class="veld"><span>CC</span><input type="text" id="m-cc"></label>
     <label class="veld"><span>Onderwerp</span><input type="text" id="m-ond"></label>
-    <label class="veld"><span>Tekst (plak de mail hier)</span><textarea id="m-tekst" style="min-height:10em"></textarea></label>
+    <label class="veld"><span>Tekst (plak de mail hier)</span><textarea id="m-tekst" style="min-height:10em">${esc(vooraf.tekst || '')}</textarea></label>
     <label class="veld"><span>Bijlagen</span><input type="file" id="m-bijl" multiple></label>`,
     async () => {
       const ond = $('#m-ond').value.trim(); if (!ond && !$('#m-tekst').value.trim()) return toast('Vul minimaal een onderwerp of tekst in');
@@ -498,6 +537,17 @@ function mailModal() {
       if (bijl.length) await sb.from('mails').update({ bijlagen: bijl }).eq('id', mail.id);
       toast('Mail gelogd'); herlaad(); return true;
     });
+  $('#m-claude').onclick = async () => {
+    const t = $('#m-tekst').value.trim(); if (!t) return toast('Plak eerst de mailtekst');
+    const k = $('#m-claude'); k.disabled = true; k.textContent = 'Bezig…';
+    try {
+      const r = await apiCall('/api/assistent', { actie: 'mail_tekst', tekst: t }); const x = r.mail || {};
+      if (x.van) $('#m-van').value = x.van; if (x.aan) $('#m-aan').value = x.aan; if (x.cc) $('#m-cc').value = x.cc; if (x.onderwerp) $('#m-ond').value = x.onderwerp; if (x.tekst) $('#m-tekst').value = x.tekst;
+      if (x.datum) { const d = new Date(x.datum); if (!isNaN(d)) $('#m-datum').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+      const eigen = /kozijnenglas|schraven/i.test(x.van || ''); $('#m-richting').value = eigen ? 'uit' : 'in';
+      toast('Uitgelezen — controleer en sla op');
+    } catch (e) { fout(e); } finally { k.disabled = false; k.textContent = '✨ Uitlezen met Claude'; }
+  };
 }
 function openMail(id) {
   S.lade = () => {
@@ -506,10 +556,11 @@ function openMail(id) {
       <table class="lijst"><tbody><tr><td class="klein">Van</td><td>${esc(x.van)}</td></tr><tr><td class="klein">Aan</td><td>${esc(x.aan)}</td></tr>${x.cc ? `<tr><td class="klein">CC</td><td>${esc(x.cc)}</td></tr>` : ''}<tr><td class="klein">Bron</td><td>${x.bron === 'bcc' ? 'automatisch via BCC' : 'handmatig gelogd door ' + esc(naam(x.gemaakt_door))}</td></tr></tbody></table>
       <div class="mail-tekst" style="margin-top:.8em">${esc(x.tekst || '')}</div>
       ${(x.bijlagen || []).length ? `<div style="margin-top:.6em">${x.bijlagen.map((b, i) => `<span class="bijlage" data-bijl="${i}">📎 ${esc(b.naam)} <span class="klein">${mb(b.grootte || 0)}</span></span>`).join('')}</div>` : ''}
-      <div class="acties-rij" style="margin-top:.8em"><button class="btn p klein" id="m-actie">+ Actiepunt uit deze mail</button>${isSchraven() ? `<button class="btn klein" id="m-verpl">Naar ${S.ruimte === 'opdrachtgever' ? 'leverancier' : 'opdrachtgever'}-ruimte</button><button class="btn klein gevaar" id="m-del">Verwijderen</button>` : ''}</div>
+      <div class="acties-rij" style="margin-top:.8em"><button class="btn p klein" id="m-actie">+ Actiepunt uit deze mail</button><button class="btn klein" id="m-voorstel">✨ Actiepunten voorstellen</button>${isSchraven() ? `<button class="btn klein" id="m-verpl">Naar ${S.ruimte === 'opdrachtgever' ? 'leverancier' : 'opdrachtgever'}-ruimte</button><button class="btn klein gevaar" id="m-del">Verwijderen</button>` : ''}</div>
       ${opmBlok('mail', id)}`);
     $$('[data-bijl]').forEach(e => e.onclick = async () => { const b = x.bijlagen[+e.dataset.bijl]; const { data, error } = await sb.storage.from(C.BUCKET).createSignedUrl(b.pad, 3600, { download: b.naam }); if (error) return fout(error); window.open(data.signedUrl, '_blank'); });
     $('#m-actie').onclick = () => actieModal({ titel: 'Re: ' + (x.onderwerp || '') }, { type: 'mail', id, label: 'Mail: ' + x.onderwerp });
+    $('#m-voorstel').onclick = () => voorstelActies('mail', id, 'Mail: ' + x.onderwerp);
     if ($('#m-verpl')) $('#m-verpl').onclick = async () => { const { error } = await sb.from('mails').update({ ruimte: S.ruimte === 'opdrachtgever' ? 'leverancier' : 'opdrachtgever' }).eq('id', id); if (error) return fout(error); sluitLade(); toast('Verplaatst'); herlaad(); };
     if ($('#m-del')) $('#m-del').onclick = () => modalBevestig('Mail verwijderen?', x.onderwerp, async () => { const { error } = await sb.from('mails').delete().eq('id', id); if (error) return fout(error); sluitLade(); herlaad(); });
     opmKoppel('mail', id);
@@ -596,6 +647,93 @@ function planModal(p) {
       const r = p.id ? await sb.from('planning').update(rec).eq('id', p.id) : await sb.from('planning').insert(rec);
       if (r.error) return fout(r.error); toast('Opgeslagen'); herlaad(); return true;
     }, p.id ? () => modalBevestig('Onderdeel verwijderen?', p.naam, async () => { const { error } = await sb.from('planning').delete().eq('id', p.id); if (error) return fout(error); herlaad(); }) : null);
+}
+
+// ===== CLAUDE-ASSISTENT =====
+async function voorstelActies(doel_type, doel_id, label) {
+  toast('Claude leest mee…');
+  let r; try { r = await apiCall('/api/assistent', { actie: 'acties', ruimte: S.ruimte, doel_type, doel_id }); } catch (e) { return fout(e); }
+  const acts = r.acties || [];
+  if (!acts.length) return toast('Claude vond geen nieuwe actiepunten in deze tekst.');
+  const personen = r.personen || [];
+  modal('Voorgestelde actiepunten', `<p class="klein">Uit: ${esc(label)}. Vink aan wat erin moet, pas eventueel aan, en klik op Toevoegen.</p>
+    ${acts.map((a, i) => `<div class="paneel" style="padding:.7em;margin-bottom:.5em"><label style="display:flex;gap:.5em;align-items:flex-start"><input type="checkbox" data-v="${i}" checked style="margin-top:.4em"><div style="flex:1">
+      <input type="text" data-vt="${i}" value="${esc(a.titel || '')}" style="font-weight:600">
+      <div class="rij"><label class="veld"><span>Wie</span><select data-vw="${i}"><option value="">— vrije naam —</option>${personen.map(p => `<option value="${p.id}" ${(a.wie || '').toLowerCase().includes((p.naam || '').split(' ')[0].toLowerCase()) ? 'selected' : ''}>${esc(p.naam)}</option>`).join('')}</select></label>
+      <label class="veld"><span>Of naam</span><input type="text" data-vn="${i}" value="${esc(a.wie || '')}"></label>
+      <label class="veld"><span>Deadline</span><input type="date" data-vd="${i}" value="${esc(a.deadline || '')}"></label></div>
+      <input type="text" data-vo="${i}" value="${esc(a.omschrijving || '')}" placeholder="toelichting" class="klein" style="margin-top:.3em"></div></label></div>`).join('')}`,
+    async () => {
+      const recs = [];
+      acts.forEach((a, i) => { if (!$(`[data-v="${i}"]`).checked) return; const wie = $(`[data-vw="${i}"]`).value; recs.push({ ruimte: S.ruimte, titel: $(`[data-vt="${i}"]`).value.trim() || a.titel, omschrijving: $(`[data-vo="${i}"]`).value, verantwoordelijke: wie || null, verantwoordelijke_naam: wie ? '' : $(`[data-vn="${i}"]`).value.trim(), deadline: $(`[data-vd="${i}"]`).value || null, prioriteit: 'normaal', status: 'open', bron_type: doel_type, bron_id: doel_id, gemaakt_door: S.user.id }); });
+      if (!recs.length) return toast('Niets aangevinkt');
+      const { error } = await sb.from('acties').insert(recs); if (error) return fout(error);
+      toast(recs.length + ' actiepunt(en) toegevoegd'); herlaad(); return true;
+    });
+  $('#modal-opslaan').textContent = 'Toevoegen';
+}
+S.chat = S.chat || {};
+function rAssistent(m) {
+  const hist = S.chat[S.ruimte] || (S.chat[S.ruimte] = []);
+  m.innerHTML = `<div class="kolommen assist-kol">
+    <div class="paneel" style="display:flex;flex-direction:column;min-height:60vh">
+      <div class="kop"><h2>✨ Projectassistent</h2><div class="vul"></div><button class="btn klein" id="ch-wis">Nieuw gesprek</button></div>
+      <p class="klein">Stel vragen over deze ruimte: bestanden, actiepunten, afspraken, mails en planning. Bijv. <i>"Wat staat er nog open voor de opdrachtgever?"</i>, <i>"Wat is er afgesproken over de glaslevering?"</i>, <i>"Vat de mails van deze week samen."</i></p>
+      <div id="ch-log" style="flex:1;overflow:auto;margin:.5em 0">${hist.length ? hist.map(h => chatBubbel(h)).join('') : '<div class="leeg">Nog geen gesprek. Stel hieronder je vraag.</div>'}</div>
+      <div class="opm-form"><textarea id="ch-in" placeholder="Je vraag…" style="min-height:3em"></textarea><button class="btn p" id="ch-stuur">Vraag</button></div>
+    </div>
+    <div>
+      <div class="paneel"><h3>Weekoverzicht</h3><p class="klein">Wat is er gebeurd, wat loopt achter, wat moet deze week. Handig om door te sturen.</p><button class="btn p" id="ch-week" style="width:100%;justify-content:center">📋 Maak weekoverzicht</button></div>
+      <div class="paneel"><h3>Actiepunten uit tekst</h3><p class="klein">Plak notities van een bouwvergadering of telefoongesprek; Claude stelt actiepunten voor.</p><textarea id="ch-tekst" placeholder="Plak hier je notities…"></textarea><button class="btn" id="ch-acties" style="width:100%;justify-content:center;margin-top:.4em">✨ Actiepunten voorstellen</button></div>
+      <p class="klein">De assistent ziet alleen de gegevens van de ruimte "${esc(C.RUIMTES[S.ruimte])}".</p>
+    </div>
+  </div>`;
+  const log = $('#ch-log'); log.scrollTop = log.scrollHeight;
+  const stuur = async () => {
+    const v = $('#ch-in').value.trim(); if (!v) return; $('#ch-in').value = '';
+    hist.push({ rol: 'user', tekst: v }); log.innerHTML = hist.map(h => chatBubbel(h)).join('') + '<div class="log-item"><span class="klein">Claude denkt na…</span></div>'; log.scrollTop = log.scrollHeight;
+    try { const r = await apiCall('/api/assistent', { actie: 'chat', ruimte: S.ruimte, vraag: v, geschiedenis: hist.slice(0, -1) }); hist.push({ rol: 'assistant', tekst: r.antwoord }); }
+    catch (e) { hist.push({ rol: 'assistant', tekst: '⚠ ' + (e.message || e) }); }
+    log.innerHTML = hist.map(h => chatBubbel(h)).join(''); log.scrollTop = log.scrollHeight;
+  };
+  $('#ch-stuur').onclick = stuur;
+  $('#ch-in').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); stuur(); } };
+  $('#ch-wis').onclick = () => { S.chat[S.ruimte] = []; render(); };
+  $('#ch-week').onclick = async () => {
+    const k = $('#ch-week'); k.disabled = true; k.textContent = 'Bezig…';
+    try { const r = await apiCall('/api/assistent', { actie: 'week', ruimte: S.ruimte }); hist.push({ rol: 'assistant', tekst: r.tekst, week: true }); log.innerHTML = hist.map(h => chatBubbel(h)).join(''); log.scrollTop = log.scrollHeight; }
+    catch (e) { fout(e); } finally { k.disabled = false; k.textContent = '📋 Maak weekoverzicht'; }
+  };
+  $('#ch-acties').onclick = async () => {
+    const t = $('#ch-tekst').value.trim(); if (!t) return toast('Plak eerst tekst');
+    toast('Claude leest mee…');
+    let r; try { r = await apiCall('/api/assistent', { actie: 'acties', ruimte: S.ruimte, doel_type: 'tekst', tekst: t }); } catch (e) { return fout(e); }
+    S._voorstelTekst = r; voorstelUitAntwoord(r, 'Geplakte notities');
+  };
+}
+function chatBubbel(h) {
+  const i = (S.chat[S.ruimte] || []).indexOf(h);
+  return `<div class="log-item ${h.rol === 'user' ? '' : 'opm'}" style="margin-left:.6em"><span class="wie">${h.rol === 'user' ? esc(S.profiel.naam) : (h.week ? 'Weekoverzicht' : 'Claude')}</span>${h.rol !== 'user' ? ` <button class="btn link klein" onclick="navigator.clipboard.writeText(window.__S.chat[window.__S.ruimte][${i}].tekst)">kopieer</button>` : ''}<div class="tekst">${esc(h.tekst)}</div></div>`;
+}
+function voorstelUitAntwoord(r, label) {
+  const acts = r.acties || []; if (!acts.length) return toast('Geen actiepunten gevonden in de tekst.');
+  // zelfde venster als voorstelActies, maar zonder bron
+  const personen = r.personen || [];
+  modal('Voorgestelde actiepunten', `<p class="klein">Uit: ${esc(label)}. Vink aan wat erin moet.</p>
+    ${acts.map((a, i) => `<div class="paneel" style="padding:.7em;margin-bottom:.5em"><label style="display:flex;gap:.5em;align-items:flex-start"><input type="checkbox" data-v="${i}" checked style="margin-top:.4em"><div style="flex:1">
+      <input type="text" data-vt="${i}" value="${esc(a.titel || '')}" style="font-weight:600">
+      <div class="rij"><label class="veld"><span>Wie</span><select data-vw="${i}"><option value="">— vrije naam —</option>${personen.map(p => `<option value="${p.id}" ${(a.wie || '').toLowerCase().includes((p.naam || '').split(' ')[0].toLowerCase()) ? 'selected' : ''}>${esc(p.naam)}</option>`).join('')}</select></label>
+      <label class="veld"><span>Of naam</span><input type="text" data-vn="${i}" value="${esc(a.wie || '')}"></label>
+      <label class="veld"><span>Deadline</span><input type="date" data-vd="${i}" value="${esc(a.deadline || '')}"></label></div>
+      <input type="text" data-vo="${i}" value="${esc(a.omschrijving || '')}" placeholder="toelichting" class="klein" style="margin-top:.3em"></div></label></div>`).join('')}`,
+    async () => {
+      const recs = [];
+      acts.forEach((a, i) => { if (!$(`[data-v="${i}"]`).checked) return; const wie = $(`[data-vw="${i}"]`).value; recs.push({ ruimte: S.ruimte, titel: $(`[data-vt="${i}"]`).value.trim() || a.titel, omschrijving: $(`[data-vo="${i}"]`).value, verantwoordelijke: wie || null, verantwoordelijke_naam: wie ? '' : $(`[data-vn="${i}"]`).value.trim(), deadline: $(`[data-vd="${i}"]`).value || null, prioriteit: 'normaal', status: 'open', gemaakt_door: S.user.id }); });
+      if (!recs.length) return toast('Niets aangevinkt');
+      const { error } = await sb.from('acties').insert(recs); if (error) return fout(error);
+      toast(recs.length + ' actiepunt(en) toegevoegd'); herlaad(); return true;
+    });
+  $('#modal-opslaan').textContent = 'Toevoegen';
 }
 
 // ===== TEAM =====

@@ -74,7 +74,8 @@ main{flex:1;max-width:1400px;width:100%;margin:0 auto;padding:1em}
 .kolommen{display:grid;grid-template-columns:2fr 1fr;gap:1em}
 .kolommen3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1em}
 .kolommen.bestanden-kol{grid-template-columns:240px 1fr}
-@media(max-width:900px){.kolommen,.kolommen.bestanden-kol{grid-template-columns:1fr}}
+.kolommen.assist-kol{grid-template-columns:1fr 320px}
+@media(max-width:900px){.kolommen,.kolommen.bestanden-kol,.kolommen.assist-kol{grid-template-columns:1fr}}
 
 /* tabellen */
 table.lijst{width:100%;border-collapse:collapse;font-size:.93rem}
