@@ -15,8 +15,15 @@ async function wieBelt(req) {
   const sb = admin();
   const { data, error } = await sb.auth.getUser(token);
   if (error || !data.user) return null;
-  const { data: profiel } = await sb.from('profielen').select('*').eq('id', data.user.id).maybeSingle();
-  if (!profiel || !profiel.actief) return null;
+  const { data: profiel, error: pe } = await sb.from('profielen').select('*').eq('id', data.user.id).maybeSingle();
+  if (pe) throw new Error('Profiel lezen mislukt: ' + pe.message);
+  if (!profiel) {
+    // service_role-sleutel omzeilt de beveiliging; ziet hij géén enkel profiel, dan is het de verkeerde sleutel
+    const { count } = await sb.from('profielen').select('id', { count: 'exact', head: true });
+    if (!count) throw new Error('SUPABASE_SERVICE_KEY in Vercel is niet de service_role-sleutel (Supabase → Project Settings → API Keys → service_role / secret key). Daarna Redeploy.');
+    return null;
+  }
+  if (!profiel.actief) return null;
   return { user: data.user, profiel, sb };
 }
 
